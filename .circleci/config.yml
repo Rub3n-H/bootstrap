@@ -1,5 +1,12 @@
 version: 2.1
 
+aliases:
+  - &repo_cache_filename |
+    repo-{{ .Environment.CIRCLE_SHA1 }}
+
+  - &npm_cache_filename |
+    {{ .Environment.CIRCLE_JOB }}-{{ .Branch }}-{{ checksum ".circleci/config.yml" }}-{{ checksum "package-lock.json" }}
+
 commands:
   install:
     parameters:
@@ -9,11 +16,18 @@ commands:
         default: []
     steps:
       - checkout
+      - save_cache:
+          key: *repo_cache_filename
+          paths:
+            - /home/circleci/project/
       - restore_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}-{{ checksum \".circleci/config.yml\" }}-{{ checksum \"package-lock.json\" }}"
+          key: *npm_cache_filename
+      - run: node --version
+      - run: npm --version
+      - run: java -version
       - run: npm ci
       - save_cache:
-          key: "{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}-{{ checksum \".circleci/config.yml\" }}-{{ checksum \"package-lock.json\" }}"
+          key: *npm_cache_filename
           paths:
             - /home/circleci/.npm
             - ./node_modules/
@@ -25,9 +39,8 @@ commands:
         type: steps
         default: []
     steps:
-      - run: node --version
-      - run: npm --version
-      - run: java -version
+      - restore_cache:
+          key: *repo_cache_filename
       - steps: << parameters.test-commands >>
 
 jobs:
