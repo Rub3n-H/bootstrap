@@ -1,9 +1,6 @@
 version: 2.1
 
 aliases:
-  - &repo_cache_filename |
-    repo-{{ .Environment.CIRCLE_SHA1 }}
-
   - &npm_cache_filename |
     {{ .Environment.CIRCLE_JOB }}-{{ .Branch }}-{{ checksum ".circleci/config.yml" }}-{{ checksum "package-lock.json" }}
 
@@ -16,10 +13,6 @@ commands:
         default: []
     steps:
       - checkout
-      - save_cache:
-          key: *repo_cache_filename
-          paths:
-            - /home/circleci/project/
       - restore_cache:
           key: *npm_cache_filename
       - run: node --version
@@ -28,9 +21,9 @@ commands:
       - run: npm ci
       - save_cache:
           key: *npm_cache_filename
+          name: Save npm modules
           paths:
             - /home/circleci/.npm
-            - ./node_modules/
 
   run-tests:
     parameters:
@@ -39,8 +32,6 @@ commands:
         type: steps
         default: []
     steps:
-      - restore_cache:
-          key: *repo_cache_filename
       - steps: << parameters.test-commands >>
 
 jobs:
